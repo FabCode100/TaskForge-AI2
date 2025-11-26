@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'pages/home_page.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/chat_message.dart';
 
-void main() {
+void main() async {
+  await Hive.initFlutter();
+  Hive.registerAdapter(ChatMessageAdapter());
   runApp(TaskForgeApp());
 }
 
