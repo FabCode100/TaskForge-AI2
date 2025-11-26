@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:frontend/core/logger.dart';
 
 class Api {
   static const baseUrl = "http://localhost:8000";
@@ -8,7 +10,7 @@ class Api {
     required String agentId,
     required String prompt,
   }) async {
-    print("agent_id: $agentId , prompt: $prompt");
+    logger.i("agent_id: $agentId , prompt: $prompt");
     try {
       final response = await http.post(
         Uri.parse("$baseUrl/agents/$agentId/execute"),
@@ -19,18 +21,32 @@ class Api {
       );
 
       if (response.statusCode != 200) {
-        print(
-          "erro de timeout ou falha do gemini: Status ${response.statusCode} - ${response.body}",
+        final errorMsg =
+            "Falha na requisição API:\n"
+            "URL: ${response.request?.url}\n"
+            "Status Code: ${response.statusCode}\n"
+            "Body: ${response.body}";
+        logger.e(errorMsg);
+        throw Exception(
+          "Erro na API (${response.statusCode}): Não foi possível processar sua solicitação.",
         );
-        throw Exception("Erro na API: ${response.statusCode}");
       }
 
       final data = json.decode(response.body);
       final reply = _normalizeOutput(data["response"]);
-      print("Resposta do agent_id ao cliente: $reply");
+      logger.i("\nResposta do agent_id ao cliente:\n $reply");
       return reply;
+    } on SocketException catch (e) {
+      logger.e("Erro de conexão (SocketException): $e");
+      throw Exception("Erro de conexão: Verifique sua internet ou o servidor.");
+    } on http.ClientException catch (e) {
+      logger.e("Erro no cliente HTTP: $e");
+      throw Exception("Erro na comunicação com o servidor.");
+    } on FormatException catch (e) {
+      logger.e("Erro de formatação (JSON inválido): $e");
+      throw Exception("Resposta inválida do servidor.");
     } catch (e) {
-      print("erro de timeout ou falha do gemini: $e");
+      logger.e("\nErro inesperado:\n $e");
       rethrow;
     }
   }
