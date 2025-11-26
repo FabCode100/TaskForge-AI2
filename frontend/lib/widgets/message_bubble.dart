@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../models/message.dart';
+import '../models/chat_message.dart';
 
 class MessageBubble extends StatelessWidget {
-  final Message message;
+  final ChatMessage message;
 
   const MessageBubble({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
-    final isMe = message.fromUser;
+    final isMe = message.sender == 'user';
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,

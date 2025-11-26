@@ -9,9 +9,9 @@ class Api {
     required String prompt,
   }) async {
     final response = await http.post(
-      Uri.parse("$baseUrl/execute"),
+      Uri.parse("$baseUrl/agents/$agentId/execute"),
       headers: {"Content-Type": "application/json"},
-      body: json.encode({"agent_id": agentId, "prompt": prompt}),
+      body: json.encode({"message": prompt}),
     );
 
     final data = json.decode(response.body);

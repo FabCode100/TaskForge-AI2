@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/agent.dart';
-import '../models/message.dart';
+import '../models/chat_message.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../core/api.dart';
 import '../widgets/message_bubble.dart';
 
@@ -10,20 +11,49 @@ class ChatPage extends StatefulWidget {
   const ChatPage({super.key, required this.agent});
 
   @override
-  _ChatPageState createState() => _ChatPageState();
+  State<ChatPage> createState() => _ChatPageState();
 }
 
 class _ChatPageState extends State<ChatPage> {
   final controller = TextEditingController();
-  final List<Message> messages = [];
+  late Box<ChatMessage> box;
+  List<ChatMessage> messages = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _openBox();
+  }
+
+  Future<void> _openBox() async {
+    final sanitized = widget.agent.name.replaceAll(
+      RegExp(r'[^a-zA-Z0-9_]'),
+      '',
+    );
+    final shortName = sanitized.length > 3
+        ? sanitized.substring(0, 3)
+        : sanitized;
+    final boxName = 'chat_${shortName.toLowerCase()}';
+    box = await Hive.openBox<ChatMessage>(boxName);
+    setState(() {
+      messages = box.values.toList();
+    });
+  }
 
   Future<void> sendMessage() async {
     final text = controller.text.trim();
     if (text.isEmpty) return;
 
+    final userMessage = ChatMessage(
+      sender: 'user',
+      text: text,
+      timestamp: DateTime.now(),
+    );
+
     setState(() {
-      messages.add(Message(text: text, fromUser: true));
+      messages.add(userMessage);
     });
+    box.add(userMessage);
 
     controller.clear();
 
@@ -32,9 +62,16 @@ class _ChatPageState extends State<ChatPage> {
       prompt: text,
     );
 
+    final botMessage = ChatMessage(
+      sender: 'agent',
+      text: response,
+      timestamp: DateTime.now(),
+    );
+
     setState(() {
-      messages.add(Message(text: response, fromUser: false));
+      messages.add(botMessage);
     });
+    box.add(botMessage);
   }
 
   @override
