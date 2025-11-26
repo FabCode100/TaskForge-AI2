@@ -27,7 +27,7 @@ class Api {
 
       final data = json.decode(response.body);
       final reply = _normalizeOutput(data["response"]);
-      print("Resposta do agent_id ao cliente $reply");
+      print("Resposta do agent_id ao cliente: $reply");
       return reply;
     } catch (e) {
       print("erro de timeout ou falha do gemini: $e");
