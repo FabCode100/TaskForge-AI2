@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/chat_message.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -9,6 +10,7 @@ class MessageBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMe = message.sender == 'user';
+    final time = DateFormat('HH:mm').format(message.timestamp);
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
@@ -20,9 +22,22 @@ class MessageBubble extends StatelessWidget {
           color: isMe ? Colors.orange : Colors.grey[800],
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(
-          message.text,
-          style: TextStyle(color: isMe ? Colors.black : Colors.white),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              message.text,
+              style: TextStyle(color: isMe ? Colors.black : Colors.white),
+            ),
+            SizedBox(height: 4),
+            Text(
+              time,
+              style: TextStyle(
+                color: isMe ? Colors.black54 : Colors.white54,
+                fontSize: 10,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/agent.dart';
 import '../models/chat_message.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import '../core/api.dart';
 import '../widgets/message_bubble.dart';
 
@@ -18,6 +18,7 @@ class _ChatPageState extends State<ChatPage> {
   final controller = TextEditingController();
   late Box<ChatMessage> box;
   List<ChatMessage> messages = [];
+  bool isTyping = false;
 
   @override
   void initState() {
@@ -52,26 +53,37 @@ class _ChatPageState extends State<ChatPage> {
 
     setState(() {
       messages.add(userMessage);
+      isTyping = true; // Ativa indicador
     });
     box.add(userMessage);
 
     controller.clear();
 
-    final response = await Api.sendMessage(
-      agentId: widget.agent.id,
-      prompt: text,
-    );
+    try {
+      final response = await Api.sendMessage(
+        agentId: widget.agent.id,
+        prompt: text,
+      );
 
-    final botMessage = ChatMessage(
-      sender: 'agent',
-      text: response,
-      timestamp: DateTime.now(),
-    );
+      final botMessage = ChatMessage(
+        sender: 'agent',
+        text: response,
+        timestamp: DateTime.now(),
+      );
 
-    setState(() {
-      messages.add(botMessage);
-    });
-    box.add(botMessage);
+      setState(() {
+        messages.add(botMessage);
+      });
+      box.add(botMessage);
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao enviar mensagem: $e')));
+    } finally {
+      setState(() {
+        isTyping = false; // Desativa indicador
+      });
+    }
   }
 
   @override
@@ -86,10 +98,39 @@ class _ChatPageState extends State<ChatPage> {
         children: [
           Expanded(
             child: ListView.builder(
+              reverse: true, // Começa de baixo para cima
               padding: EdgeInsets.all(12),
-              itemCount: messages.length,
+              itemCount: messages.length + (isTyping ? 1 : 0),
               itemBuilder: (context, index) {
-                return MessageBubble(message: messages[index]);
+                // Se estiver digitando, o primeiro item (index 0) é o indicador
+                if (isTyping && index == 0) {
+                  return Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      children: [
+                        CircularProgressIndicator(strokeWidth: 2),
+                        SizedBox(width: 10),
+                        Text(
+                          "${widget.agent.name} está digitando...",
+                          style: TextStyle(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                // Calcula o índice real da mensagem na lista cronológica
+                // Se isTyping, index 0 é o loading, então as mensagens começam do index 1
+                // Com reverse: true, index 0 (bottom) deve mostrar a ÚLTIMA mensagem da lista
+                final msgIndex = isTyping
+                    ? messages.length - index
+                    : messages.length - 1 - index;
+
+                if (msgIndex < 0 || msgIndex >= messages.length) {
+                  return SizedBox.shrink();
+                }
+
+                return MessageBubble(message: messages[msgIndex]);
               },
             ),
           ),
@@ -112,6 +153,7 @@ class _ChatPageState extends State<ChatPage> {
                         borderSide: BorderSide.none,
                       ),
                     ),
+                    onSubmitted: (_) => sendMessage(),
                   ),
                 ),
                 SizedBox(width: 10),
