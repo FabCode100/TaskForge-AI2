@@ -13,7 +13,9 @@ class Api {
       final response = await http.post(
         Uri.parse("$baseUrl/agents/$agentId/execute"),
         headers: {"Content-Type": "application/json"},
-        body: json.encode({"message": prompt}),
+        body: json.encode({
+          "message": "$prompt\n\nResponda em até 5 linhas.Não Use markdown.",
+        }),
       );
 
       if (response.statusCode != 200) {
@@ -24,11 +26,16 @@ class Api {
       }
 
       final data = json.decode(response.body);
-      print("Resposta do agent_id ao cliente ${data["response"]}");
-      return data["response"];
+      final reply = _normalizeOutput(data["response"]);
+      print("Resposta do agent_id ao cliente $reply");
+      return reply;
     } catch (e) {
       print("erro de timeout ou falha do gemini: $e");
       rethrow;
     }
+  }
+
+  static String _normalizeOutput(String text) {
+    return text.trim();
   }
 }
