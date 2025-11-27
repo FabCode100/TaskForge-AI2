@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:frontend/core/logger.dart';
 
 class Api {
-  static const baseUrl = "http://localhost:8000";
+  static const baseUrl = "https://taskforge-backend-deploy.vercel.app/";
 
   static Future<String> sendMessage({
     required String agentId,
